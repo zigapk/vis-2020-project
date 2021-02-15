@@ -8,35 +8,42 @@ def parse_tag(prefix, obj):
     raise Exception('tag not found')
 
 
-def
-
-
 events_data = json.loads(open('data/events.json').read())
 exercises_data = json.loads(open('data/exercises.json').read())
 
-guid_to_data = {}
+exercises = {}
+guid_to_id_position = {}
 
 # parse all the questions (without parametric exercises)
 for exercise in exercises_data:
     data = json.loads(exercise['data'])
-
+    exercise_id = data['id']
     difficulty = parse_tag('D', data)
     topic = parse_tag('T', data)
-    exercise_id = data['id']
 
+    # parametric
     if exercise_id.count('.') > 3:
-        continue  # skip parametric exercises
+        exercise_id = '.'.join(exercise_id.split('.')[:-1])
 
-    for question in data['questions']:
-        guid = question['guid']
-
-        guid_to_data[guid] = {
-            'achieved_points': 0,
-            'total_points': 0,
-            'exercise_id': exercise_id,
-            'topic': topic,
+    if exercise_id not in exercises:
+        exercises[exercise_id] = {
             'difficulty': difficulty,
+            'topic': topic,
+            'questions': []
         }
+
+        for question in data['questions']:
+            guid = question['guid']
+            exercises[exercise_id]['questions'].append({
+                'guid': guid,
+                'achieved_points': 0,
+                'total_points': 0,
+            })
+
+    for i in range(len(data['questions'])):
+        question = data['questions'][i]
+        guid = question['guid']
+        guid_to_id_position[guid] = (exercise_id, i)
 
 events = {}
 
@@ -49,17 +56,18 @@ for event in events_data:
 for key, value in events.items():
     guid = key[0]
 
-    if guid not in guid_to_data:
-        continue
+    exercise_id, index = guid_to_id_position[guid]
 
-    guid_to_data[guid]['achieved_points'] += value
-    guid_to_data[guid]['total_points'] += 1
+    exercises[exercise_id]['questions'][index]['achieved_points'] += value
+    exercises[exercise_id]['questions'][index]['total_points'] += 1
 
 print(','.join(['exercise_id', 'question_guid', 'topic', 'difficulty', 'average_result']))
-for key, value in guid_to_data.items():
-    avg = 0 if value['total_points'] == 0 else value['achieved_points'] / value['total_points']
-    exercise_id = value['exercise_id']
-    difficulty = value['difficulty']
-    topic = value['topic']
+for exercise_id, exercise_data in exercises.items():
+    difficulty = exercise_data['difficulty']
+    topic = exercise_data['topic']
 
-    print(','.join([exercise_id, key, str(topic), str(difficulty), str(avg)]))
+    for question in exercise_data['questions']:
+        avg = 0 if question['total_points'] == 0 else question['achieved_points'] / question['total_points']
+        guid = question['guid']
+
+        print(','.join([exercise_id, guid, str(topic), str(difficulty), str(avg)]))
