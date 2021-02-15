@@ -10,9 +10,17 @@ def parse_tag(prefix, obj):
 
 events_data = json.loads(open('data/events.json').read())
 exercises_data = json.loads(open('data/exercises.json').read())
+exercise_ratings_data = json.loads(open('data/ratings.json').read())
 
 exercises = {}
 guid_to_id_position = {}
+exercise_id_to_rating = {}
+
+# parse exercise ratings
+for rating in exercise_ratings_data:
+    elo_rating = rating['ratingELO']
+    exercise = rating['exerciseId']
+    exercise_id_to_rating[exercise] = elo_rating  # overwrite (take last rating)
 
 # parse all the questions (without parametric exercises)
 for exercise in exercises_data:
@@ -20,6 +28,8 @@ for exercise in exercises_data:
     exercise_id = data['id']
     difficulty = parse_tag('D', data)
     topic = parse_tag('T', data)
+
+    rating = 200 if exercise['exerciseId'] not in exercise_id_to_rating else exercise_id_to_rating[exercise['exerciseId']]
 
     # parametric
     if exercise_id.count('.') > 3:
@@ -29,6 +39,7 @@ for exercise in exercises_data:
         exercises[exercise_id] = {
             'difficulty': difficulty,
             'topic': topic,
+            'rating': rating,
             'questions': []
         }
 
@@ -61,13 +72,14 @@ for key, value in events.items():
     exercises[exercise_id]['questions'][index]['achieved_points'] += value
     exercises[exercise_id]['questions'][index]['total_points'] += 1
 
-print(','.join(['exercise_id', 'question_guid', 'topic', 'difficulty', 'average_result']))
+print(','.join(['exercise_id', 'question_guid', 'rating',  'topic', 'difficulty', 'average_result']))
 for exercise_id, exercise_data in exercises.items():
     difficulty = exercise_data['difficulty']
     topic = exercise_data['topic']
+    rating = exercise_data['rating']
 
     for question in exercise_data['questions']:
         avg = 0 if question['total_points'] == 0 else question['achieved_points'] / question['total_points']
         guid = question['guid']
 
-        print(','.join([exercise_id, guid, str(topic), str(difficulty), str(avg)]))
+        print(','.join([exercise_id, guid, str(rating), str(topic), str(difficulty), str(avg)]))
