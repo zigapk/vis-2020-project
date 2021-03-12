@@ -29,7 +29,8 @@ for exercise in exercises_data:
     difficulty = parse_tag('D', data)
     topic = parse_tag('T', data)
 
-    rating = 200 if exercise['exerciseId'] not in exercise_id_to_rating else exercise_id_to_rating[exercise['exerciseId']]
+    rating = 200 if exercise['exerciseId'] not in exercise_id_to_rating else exercise_id_to_rating[
+        exercise['exerciseId']]
 
     # parametric
     if exercise_id.count('.') > 3:
@@ -49,6 +50,7 @@ for exercise in exercises_data:
                 'guid': guid,
                 'achieved_points': 0,
                 'total_points': 0,
+                'answer_count': 0,
             })
 
     for i in range(len(data['questions'])):
@@ -72,7 +74,10 @@ for key, value in events.items():
     exercises[exercise_id]['questions'][index]['achieved_points'] += value
     exercises[exercise_id]['questions'][index]['total_points'] += 1
 
-print(','.join(['exercise_id', 'question_guid', 'rating',  'topic', 'difficulty', 'average_result']))
+    # count number of answers
+    exercises[exercise_id]['questions'][index]['answer_count'] += 1
+
+print(','.join(['exercise_id', 'question_guid', 'rating', 'topic', 'difficulty', 'average_result', 'answer_count']))
 for exercise_id, exercise_data in exercises.items():
     difficulty = exercise_data['difficulty']
     topic = exercise_data['topic']
@@ -81,5 +86,6 @@ for exercise_id, exercise_data in exercises.items():
     for question in exercise_data['questions']:
         avg = 0 if question['total_points'] == 0 else question['achieved_points'] / question['total_points']
         guid = question['guid']
+        answer_count = question['answer_count']
 
-        print(','.join([exercise_id, guid, str(rating), str(topic), str(difficulty), str(avg)]))
+        print(','.join([exercise_id, guid, str(rating), str(topic), str(difficulty), str(avg), str(answer_count)]))
